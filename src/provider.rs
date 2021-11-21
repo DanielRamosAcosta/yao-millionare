@@ -5,27 +5,24 @@ use std::ops::Range;
 pub struct Provider {
     key: RsaPrivateKey,
     money: u8,
+    money_max: u16,
 }
 
 impl Provider {
-    pub fn new(key: RsaPrivateKey, money: u8) -> Provider {
-        Provider { key, money }
+    pub fn new(key: RsaPrivateKey, money: u8, money_max: u16) -> Provider {
+        Provider {
+            key,
+            money,
+            money_max,
+        }
     }
 
     pub fn get_batch_z(&self, ciphertext: BigUint) -> (BigUint, Vec<BigUint>) {
-        let d_bytes = self.key.d().to_bytes_be();
-        let d = BigUint::from_bytes_be(&d_bytes);
-        let n_bytes = self.key.n().to_bytes_be();
-        let n = BigUint::from_bytes_be(&n_bytes);
-        let range: Range<u16> = 0..21;
+        let range: Range<u16> = 0..(self.money_max + 1);
 
         let y_u = range
-            .map(|u| {
-                // pow(enc_score + i, d, N);
-                let foo: BigUint = ciphertext.clone() + BigUint::from(u);
-
-                return foo.modpow(&d, &n);
-            })
+            .map(|u| &ciphertext + BigUint::from(u))
+            .map(|r| r.modpow(&self.key.d(), &self.key.n()))
             .enumerate()
             .map(|(i, z)| {
                 if i >= usize::from(self.money) {
@@ -36,11 +33,16 @@ impl Provider {
             })
             .collect::<Vec<BigUint>>();
 
-        let prime_bytes = Generator::new_prime(usize::from(48u8)).to_bytes_be();
-        let prime = BigUint::from_bytes_be(&prime_bytes);
+        let prime = Provider::generate_prime(48);
 
         let z_u = y_u.iter().map(|x| x % &prime).collect::<Vec<BigUint>>();
 
         return (prime, z_u);
+    }
+
+    fn generate_prime(n: usize) -> BigUint {
+        let prime_bytes = Generator::new_prime(n).to_bytes_be();
+        let prime = BigUint::from_bytes_be(&prime_bytes);
+        return prime;
     }
 }
