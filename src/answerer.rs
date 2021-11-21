@@ -1,6 +1,4 @@
-use num::bigint::{BigUint, ToBigUint};
-use num::ToPrimitive;
-use rsa::{PublicKeyParts, RsaPublicKey};
+use rsa::{BigUint, PublicKeyParts, RsaPublicKey};
 
 pub struct Answerer {
     money: u8,
@@ -38,7 +36,7 @@ impl Answerer {
         let n_bytes = peer_public_key.n().to_bytes_be();
         let n = BigUint::from_bytes_be(&n_bytes);
 
-        let uint = 65537.to_biguint().unwrap();
+        let uint = BigUint::from(65537u32);
 
         let cipher = self.x.modpow(&uint, &n);
 
@@ -47,6 +45,8 @@ impl Answerer {
 
     pub fn peer_is_ge(&self, prime: BigUint, z_u: Vec<BigUint>) -> bool {
         let uint = self.x.clone() % prime;
-        return z_u.get(self.money.to_usize().unwrap()).unwrap().clone() != uint;
+        let i = usize::from(self.money);
+
+        return z_u.get(i).unwrap().clone() != uint;
     }
 }
