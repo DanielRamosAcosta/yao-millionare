@@ -101,6 +101,7 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rsa::pkcs1::FromRsaPrivateKey;
     use rsa::BigUint;
 
     fn generate_private_key() -> RsaPrivateKey {
